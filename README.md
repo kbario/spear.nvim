@@ -7,11 +7,13 @@ A lightweight plugin for blazingly fast intrafolder file navigation.
 Folders often contain files concerned with one aspect of a component or unit of work.
 A classic example is angular's component folder structure.
 
+```bash
 Component
-  |_ component.html
-  |_ component.scss
-  |_ component.ts
-  |_ component.spec.ts
+    ├─ component.html
+    ├─ component.scss
+    ├─ component.ts
+    └─ component.spec.ts
+```
 
 Each file codes some part of the component which is great for clean code but an absolute giant pain in the ass when you need to constantly switch between files.
 
