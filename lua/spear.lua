@@ -64,16 +64,16 @@ local function change_file(id)
   vim.api.nvim_buf_set_option(id, "buflisted", true)
 end
 
-local function remove_from(to_remove, to_remove_from)
+local function remove_from(to_remove_from, to_remove)
   return string.gsub(to_remove_from, to_remove, "")
 end
 
 local function remove_file_from_dir(dir, file)
-  return remove_from("/" .. file, dir)
+  return remove_from(dir, "/" .. file)
 end
 
-local function add_ext_input_to_file(dirn, extn)
-  return string.format("%s%s", dirn, extn)
+local function concatenare_sentiero(pathnome, dirnome, extn)
+  return string.format("%s/%s%s", pathnome, dirnome, extn)
 end
 
 -- end string manipulation functions
@@ -97,23 +97,32 @@ local function get_buf_to_go_to_id(new_nome)
   end
 end
 
-local function get_new_buf_id_if_any(dirnome, ext_inpt)
+local function get_ext_as_string(ext_inpt)
+  local ext_string = ""
+  for _, v in pairs(ext_inpt) do
+    ext_string = string.format("%s, %s", ext_string, v)
+  end
+  return ext_string
+end
+
+local function get_writable_file(sentiero, dirnome, ext_inpt)
   if is_table(ext_inpt) then
-    for _, v in pairs(ext_inpt) do
-      local new_name = add_ext_input_to_file(dirnome, v)
-      if check_is_writable_file(new_name) then
-        return get_buf_to_go_to_id(new_name)
+    for _, v in ipairs(ext_inpt) do
+      local new_path = concatenare_sentiero(sentiero, dirnome, v)
+      if check_is_writable_file(new_path) then
+        return new_path
       end
     end
+    return false
   elseif is_string(ext_inpt) then
-    local new_name = add_ext_input_to_file(dirnome, ext_inpt)
-    if check_is_writable_file(new_name) then
-      return get_buf_to_go_to_id(new_name)
+    local new_path = concatenare_sentiero(sentiero, dirnome, ext_inpt)
+    if check_is_writable_file(new_path) then
+      return new_path
     end
+    return false
   else
     return false
   end
-
 end
 
 -- end getting detail functions
@@ -122,32 +131,52 @@ end
 function M.spear(ext_input)
 
   local ext_input_is_valid = is_valid(ext_input)
-  if ext_input_is_valid == nil then return print("not a valid extension; check your config") end
+
+  if ext_input_is_valid == nil then
+    return print("spear: not a valid extension; check your config")
+  end
 
   local current_name = get_current_name()
   local is_file_or_dir = check_current_is_file_or_dir(current_name)
-  if is_file_or_dir == nil then return print("cannot do things here") end
+
+  if is_file_or_dir == nil then
+    return print("spear: cannot do things here")
+  end
 
   if is_file_or_dir == "file" then
 
     local filename = get_last_sec_of_path(current_name)
-    local path_without_filename = remove_file_from_dir(current_name, filename)
-    local dirname = get_last_sec_of_path(path_without_filename)
-    local extension = remove_from(dirname, filename)
-    if ext_input_matches_extension(ext_input, extension) then return print("spear: already in file") end
+    local directory = remove_file_from_dir(current_name, filename)
+    local dir_name = get_last_sec_of_path(directory)
+    local extension = remove_from(filename, dir_name)
 
-    local file_to_go_to_id = get_new_buf_id_if_any(dirname, ext_input)
-    if file_to_go_to_id == false then return print("spear: file with that name doesn't exist") end
+    if ext_input_matches_extension(ext_input, extension) then
+      return print("spear: already in file")
+    end
 
-    change_file(file_to_go_to_id)
+    local new_path = get_writable_file(directory, dir_name, ext_input)
+
+    if new_path == false then
+      local ext_string = get_ext_as_string(ext_input)
+      return print(string.format("spear: file with extension %s doesn't exist", ext_string))
+    end
+
+    local id = get_buf_to_go_to_id(new_path)
+
+    change_file(id)
 
   elseif is_file_or_dir == "dir" then
 
     local dirname = get_last_sec_of_path(current_name)
-    local file_to_go_to_id = get_new_buf_id_if_any(dirname, ext_input)
-    if file_to_go_to_id == false then return print("spear: file with that name doesn't exist") end
+    local new_path = get_writable_file(current_name, dirname, ext_input)
 
-    change_file(file_to_go_to_id)
+    if new_path == false then
+      return print("spear: file with that name doesn't exist")
+    end
+
+    local id = get_buf_to_go_to_id(new_path)
+
+    change_file(id)
 
   end
 end
