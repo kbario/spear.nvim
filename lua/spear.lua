@@ -98,9 +98,24 @@ local function get_buf_to_go_to_id(new_nome)
 end
 
 local function get_ext_as_string(ext_inpt)
+  if is_string(ext_inpt) then return ext_inpt end
   local ext_string = ""
+  local idx = 0
+  local length = 0
+  for _, _ in pairs(ext_inpt) do
+    length = length + 1
+  end
   for _, v in pairs(ext_inpt) do
-    ext_string = string.format("%s, %s", ext_string, v)
+    local sep
+    if idx == 0 then
+      sep = " "
+    elseif idx == length-1 then
+      sep = " or "
+    else
+      sep = ", "
+    end
+    ext_string = string.format("%s%s%s", ext_string, sep, v)
+    idx = idx+1
   end
   return ext_string
 end
