@@ -1,11 +1,12 @@
 local M = {}
 
 local function get_slash(nome)
-  if string.find(nome, "\\") ~= nil then
+  --[[ if string.find(nome, "\\") ~= nil then
     return "\\"
   elseif string.find(nome, "/") ~= nil then
     return "/"
-  end
+  end ]]
+  return "/"
 end
 
 -- start checking functions
