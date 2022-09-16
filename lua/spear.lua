@@ -81,7 +81,7 @@ local function remove_from(to_remove_from, to_remove)
 end
 
 local function remove_file_from_dir(dir, slash, file)
-  return remove_from(dir, slash .. file)
+  return remove_from(dir, string.format("%s%s",slash, file))
 end
 
 local function concatenare_sentiero(pathnome, slash, dirnome, extn)
