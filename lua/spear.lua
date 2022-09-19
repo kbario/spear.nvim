@@ -1,15 +1,19 @@
 local M = {}
+local utils = {}
+local pth = require("plenary.path")
 
-local function get_slash(nome)
-  --[[ if string.find(nome, "\\") ~= nil then
-    return "\\"
-  elseif string.find(nome, "/") ~= nil then
-    return "/"
-  end ]]
-  return "/"
+-- start helper functions
+function utils.project_key()
+  return vim.loop.cwd()
 end
 
--- start checking functions
+function utils.normalize_path(item)
+  return pth:new(item):make_relative(utils.project_key())
+end
+
+-- end helper functions
+
+-- start validation functions
 local function is_table(thing)
   return type(thing) == "table"
 end
@@ -37,6 +41,10 @@ local function is_valid(extn_input)
   return "string"
 end
 
+local function check_is_writable_file(new_nome)
+  return vim.fn.filewritable(new_nome) == 1
+end
+
 local function check_current_is_file_or_dir(thing)
   local num = vim.fn.filewritable(thing)
   if num == 1 then
@@ -48,11 +56,7 @@ local function check_current_is_file_or_dir(thing)
   end
 end
 
-local function check_is_writable_file(new_nome)
-  return vim.fn.filewritable(new_nome) == 1
-end
-
-local function ext_input_matches_extension(ext_inpt, current_ext)
+local function ext_input_matches_extension(current_ext, ext_inpt)
   if is_table(ext_inpt) then
     for _, v in ipairs(ext_inpt) do
       if v == current_ext then
@@ -68,45 +72,35 @@ local function ext_input_matches_extension(ext_inpt, current_ext)
   end
 end
 
--- end checking functions
+-- end validation functions
 
--- start string manipulation functions
-local function change_file(id)
-  vim.api.nvim_set_current_buf(id)
-  vim.api.nvim_buf_set_option(id, "buflisted", true)
-end
-
-local function remove_from(to_remove_from, to_remove)
-  return string.gsub(to_remove_from, to_remove, "")
-end
-
-local function remove_file_from_dir(dir, slash, file)
-  return remove_from(dir, string.format("%s%s",slash, file))
-end
-
-local function concatenare_sentiero(pathnome, slash, dirnome, extn)
-  return string.format("%s%s%s%s", pathnome, slash, dirnome, extn)
-end
-
--- end string manipulation functions
-
--- start getting detail functions
-local function get_current_name()
-  local buf_id = vim.api.nvim_get_current_buf()
-  return vim.api.nvim_buf_get_name(buf_id)
-end
-
-local function get_last_sec_of_path(path, slash)
-  local htap = path:reverse()
-  return string.match(htap, "[^" .. slash .. "]*"):reverse()
-end
-
-local function get_buf_to_go_to_id(new_nome)
-  if vim.fn.bufexists(new_nome) ~= 0 then
-    return vim.fn.bufnr(new_nome)
-  else
-    return vim.fn.bufadd(new_nome)
+-- start getters
+--[[ local function get_rel_buf_name(id)
+  if id == nil then
+    return utils.normalize_path(vim.api.nvim_buf_get_name(0))
+  elseif type(id) == "string" then
+    return utils.normalize_path(id)
   end
+end ]]
+
+local function get_abs_buf_name(id)
+  if id == nil then
+    return vim.api.nvim_buf_get_name(0)
+  elseif type(id) == "string" then
+    return vim.api.nvim_buf_get_name(id)
+  end
+end
+
+local function get_tail(buf_nome)
+  return vim.fn.fnamemodify(buf_nome, ":t")
+end
+
+local function get_parent(buf_nome)
+  return vim.fn.fnamemodify(buf_nome, ":h:t")
+end
+
+local function get_extension(dir_nome, file_nome)
+  return string.gsub(file_nome, dir_nome, "")
 end
 
 local function get_ext_as_string(dirnome, ext_inpt)
@@ -140,88 +134,99 @@ local function get_ext_as_string(dirnome, ext_inpt)
   end
 end
 
-local function get_writable_file(sentiero, slash, dirnome, ext_inpt)
+local function get_new_path_name(current_path, filenome, new_file_name)
+  if filenome == nil then
+    return string.format("%s%s", vim.fn.fnamemodify(current_path, ":p"), new_file_name)
+  elseif is_string(filenome) then
+    return vim.fn.fnamemodify(current_path, string.format(":s?%s?%s?", filenome, new_file_name))
+  end
+end
+
+local function get_writable_file(current_path, dirnome, filenome, ext_inpt)
   if is_table(ext_inpt) then
     for _, v in ipairs(ext_inpt) do
-      local new_path = concatenare_sentiero(sentiero, slash, dirnome, v)
+      local new_file_name = string.format("%s%s", dirnome, v)
+      local new_path = get_new_path_name(current_path, filenome, new_file_name)
       if check_is_writable_file(new_path) then
         return new_path
       end
     end
-    return false
+    return nil
   elseif is_string(ext_inpt) then
-    local new_path = concatenare_sentiero(sentiero, slash, dirnome, ext_inpt)
+    local new_file_name = string.format("%s%s", dirnome, ext_inpt)
+    local new_path = get_new_path_name(current_path, filenome, new_file_name)
     if check_is_writable_file(new_path) then
       return new_path
     end
-    return false
+    return nil
   else
-    return false
+    return nil
   end
 end
 
-local function print_speared_to(new_nome)
-  print("spear speared to " .. new_nome)
+local function get_buf_to_go_to_id(new_nome)
+  if vim.fn.bufexists(new_nome) ~= 0 then
+    return vim.fn.bufnr(new_nome)
+  else
+    return vim.fn.bufadd(new_nome)
+  end
 end
 
--- end getting detail functions
+-- end getters
+
+-- start file nav functions
+local function change_file(id)
+  vim.api.nvim_set_current_buf(id)
+  vim.api.nvim_buf_set_option(id, "buflisted", true)
+end
+
+-- end file nav functions
+
+-- start print functions
+local function speared_to(pathnome)
+  print(string.format("speared to %s", utils.normalize_path(pathnome)))
+end
+
+-- end print functions
 
 -- main function
 function M.spear(ext_input)
 
   local ext_input_is_valid = is_valid(ext_input)
-
   if ext_input_is_valid == nil then
     return print("spear: not a valid extension; check your config")
   end
 
-  local current_name = get_current_name()
-  local slash = get_slash(current_name)
-  local is_file_or_dir = check_current_is_file_or_dir(current_name)
+  local buf_name = get_abs_buf_name()
+  local new_path
+  local dir_name
 
+  local is_file_or_dir = check_current_is_file_or_dir(buf_name)
   if is_file_or_dir == nil then
     return print("spear can't do things here")
   end
 
   if is_file_or_dir == "file" then
-
-    local filename = get_last_sec_of_path(current_name, slash)
-    local directory = remove_file_from_dir(current_name, slash, filename)
-    local dir_name = get_last_sec_of_path(directory, slash)
-    local extension = remove_from(filename, dir_name)
-
-    if ext_input_matches_extension(ext_input, extension) then
+    local file_name = get_tail(buf_name)
+    dir_name = get_parent(buf_name)
+    local extension = get_extension(dir_name, file_name)
+    if ext_input_matches_extension(extension, ext_input) then
       return print("spear: already in file")
     end
-
-    local new_path = get_writable_file(directory, slash, dir_name, ext_input)
-
-    if new_path == false then
-      local ext_string = get_ext_as_string(dir_name, ext_input)
-      return print(string.format("spear can't find %s here", ext_string))
-    end
-
-    local id = get_buf_to_go_to_id(new_path)
-    local new_name = get_last_sec_of_path(new_path, slash)
-    change_file(id)
-    print_speared_to(new_name)
-
+    new_path = get_writable_file(buf_name, dir_name, file_name, ext_input)
   elseif is_file_or_dir == "dir" then
-
-    local dirname = get_last_sec_of_path(current_name, slash)
-    local new_path = get_writable_file(current_name, slash, dirname, ext_input)
-
-    if new_path == false then
-      local ext_string = get_ext_as_string(dirname, ext_input)
-      return print(string.format("spear can't find %s here", ext_string))
-    end
-
-    local id = get_buf_to_go_to_id(new_path)
-
-    local new_name = get_last_sec_of_path(new_path, slash)
-    change_file(id)
-    print_speared_to(new_name)
+    dir_name = get_tail(buf_name)
+    new_path = get_writable_file(buf_name, dir_name, nil, ext_input)
   end
+
+  if new_path == nil then
+    local ext_string = get_ext_as_string(dir_name, ext_input)
+    return print(string.format("spear: no files named %s found", ext_string))
+  end
+
+  local id = get_buf_to_go_to_id(new_path)
+  change_file(id)
+  speared_to(new_path)
 end
 
 -- end main function
