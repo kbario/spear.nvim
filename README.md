@@ -3,7 +3,7 @@
 ![logo](logo.svg)
 
 </div>
-<div style="text-align: center">
+<div align="center">
 
 # Spear
 
