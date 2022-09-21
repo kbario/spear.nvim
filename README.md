@@ -1,23 +1,20 @@
-<div style="display: flex;">
-
-<div style="display: flex; flex-direction: column; justify-content: center;"> 
-
-# Spear
-
-A lightweight plugin for blazingly fast intrafolder neovim file navigation (or spearing).
-
-
-
-</div>
+<div style="text-align: center">
 
 ![logo](logo.svg)
 
- </div>
+</div>
+<div style="text-align: center">
+
+# Spear
+
+Blazingly fast intrafolder neovim file navigation.
+
+</div>
 
 ## the problem
 
-Folders are used to organise code, and often, the files in those folders follow common file structures.
-A classic example is angular's component folder structure.
+Folders are used to organise units of work, and good separation of concern sees this work broken up further into mutlilple files.
+A classic example of this is angular's component folder structure.
 
 ```bash
 Component
@@ -27,7 +24,7 @@ Component
  └─ component.spec.ts
 ```
 
-Each file codes some part of the component which is great for clean code but an absolute giant pain in the ass when you need to constantly switch between files.
+This is great for organised code but tedious when constantly switching between files to work on one thing.
 
 You could try: 
  - navigating using a file tree (with the 20 keystrokes it takes per file transfer),
