@@ -1,52 +1,34 @@
+local utils = require("spear.utils")
+
 local M = {}
-local utils = {}
-local pth = require("plenary.path")
-
--- start helper functions
-function utils.project_key()
-  return vim.loop.cwd()
-end
-
-function utils.normalize_path(item)
-  return pth:new(item):make_relative(utils.project_key())
-end
-
--- end helper functions
 
 -- start validation functions
-local function is_table(thing)
-  return type(thing) == "table"
-end
-
-local function is_string(thing)
-  return type(thing) == "string"
-end
-
 local function is_valid(extn_input)
-  if is_table(extn_input) then
+  if utils.is_table(extn_input) then
     local length = 0
     for _, v in ipairs(extn_input) do
-      if not is_string(v) then
-        print("Please provide only strings")
+      if not utils.is_string(v) then
+        return nil
+      end
+      if v == "" or v == " " then
         return nil
       end
       length = length + 1
     end
     if length == 0 then return nil end
     return "table"
-  elseif not is_string(extn_input) then
-    print("Please provide only strings")
-    return nil
+  elseif utils.is_string(extn_input) then
+    return "string"
   end
-  return "string"
+  return nil
 end
 
 local function check_is_writable_file(new_nome)
   return vim.fn.filewritable(new_nome) == 1
 end
 
-local function check_current_is_file_or_dir(thing)
-  local num = vim.fn.filewritable(thing)
+local function check_current_is_file_or_dir(buf_nome)
+  local num = vim.fn.filewritable(buf_nome)
   if num == 1 then
     return "file"
   elseif num == 2 then
@@ -57,13 +39,13 @@ local function check_current_is_file_or_dir(thing)
 end
 
 local function ext_input_matches_extension(current_ext, ext_inpt)
-  if is_table(ext_inpt) then
+  if utils.is_table(ext_inpt) then
     for _, v in ipairs(ext_inpt) do
       if v == current_ext then
         return true
       end
     end
-  elseif is_string(ext_inpt) then
+  elseif utils.is_string(ext_inpt) then
     if ext_inpt == current_ext then
       return true
     end
@@ -91,13 +73,20 @@ local function get_abs_buf_name(id)
   end
 end
 
-local function get_tail(buf_nome)
-  return vim.fn.fnamemodify(buf_nome, ":t")
+local function get_end(buf_nome)
+  if not utils.is_string(buf_nome)then
+    return nil
+  end
+  local eman = string.match(buf_nome:reverse(), "[^".. utils.get_slash() .."%s]")
+  local end_name = eman:reverse()
+  local new_file_name = string.gsub(buf_nome, utils.get_slash()..end_name,'')
+  return end_name, new_file_name
+  -- return vim.fn.fnamemodify(buf_nome, ":t")
 end
 
-local function get_parent(buf_nome)
+--[[ local function get_parent(buf_nome)
   return vim.fn.fnamemodify(buf_nome, ":h:t")
-end
+end ]]
 
 local function get_extension(dir_nome, file_nome)
   return string.gsub(file_nome, dir_nome, "")
@@ -105,10 +94,10 @@ end
 
 local function get_ext_as_string(dirnome, ext_inpt)
   local ext_string = ""
-  if is_string(ext_inpt) then
+  if utils.is_string(ext_inpt) then
     ext_string = string.format("%s%s", dirnome, ext_inpt)
     return ext_string
-  elseif is_table(ext_inpt) then
+  elseif utils.is_table(ext_inpt) then
     local idx = 0
     local length = 0
     for _, _ in pairs(ext_inpt) do
@@ -137,13 +126,13 @@ end
 local function get_new_path_name(current_path, filenome, new_file_name)
   if filenome == nil then
     return string.format("%s%s", vim.fn.fnamemodify(current_path, ":p"), new_file_name)
-  elseif is_string(filenome) then
+  elseif utils.is_string(filenome) then
     return vim.fn.fnamemodify(current_path, string.format(":s?%s?%s?", filenome, new_file_name))
   end
 end
 
 local function get_writable_file(current_path, dirnome, filenome, ext_inpt)
-  if is_table(ext_inpt) then
+  if utils.is_table(ext_inpt) then
     for _, v in ipairs(ext_inpt) do
       local new_file_name = string.format("%s%s", dirnome, v)
       local new_path = get_new_path_name(current_path, filenome, new_file_name)
@@ -152,7 +141,7 @@ local function get_writable_file(current_path, dirnome, filenome, ext_inpt)
       end
     end
     return nil
-  elseif is_string(ext_inpt) then
+  elseif utils.is_string(ext_inpt) then
     local new_file_name = string.format("%s%s", dirnome, ext_inpt)
     local new_path = get_new_path_name(current_path, filenome, new_file_name)
     if check_is_writable_file(new_path) then
@@ -187,35 +176,45 @@ local function speared_to(pathnome)
   print(string.format("speared to %s", utils.normalize_path(pathnome)))
 end
 
+local function swapped_to(pathnome)
+  print(string.format("spear: swapped to %s", utils.normalize_path(pathnome)))
+end
+
 -- end print functions
 
 -- main function
-function M.spear(ext_input)
+function M.spear(ext_input, overrides)
 
+  -- check inputs are valid
   local ext_input_is_valid = is_valid(ext_input)
   if ext_input_is_valid == nil then
     return print("spear: not a valid extension; check your config")
   end
 
-  local buf_name = get_abs_buf_name()
-  local new_path
-  local dir_name
+  overrides = utils.validate_options(overrides, "local")
 
+  -- initialise all variables
+  local buf_name = get_abs_buf_name()
+  local file_name
+  local dir_name
+  local new_path
+
+  -- check if were in a file or folder
   local is_file_or_dir = check_current_is_file_or_dir(buf_name)
   if is_file_or_dir == nil then
     return print("spear can't do things here")
   end
 
   if is_file_or_dir == "file" then
-    local file_name = get_tail(buf_name)
-    dir_name = get_parent(buf_name)
+    file_name, buf_name = get_end(buf_name)
+    dir_name, buf_name = get_end(buf_name)
     local extension = get_extension(dir_name, file_name)
     if ext_input_matches_extension(extension, ext_input) then
       return print("spear: already in file")
     end
     new_path = get_writable_file(buf_name, dir_name, file_name, ext_input)
   elseif is_file_or_dir == "dir" then
-    dir_name = get_tail(buf_name)
+    dir_name = get_end(buf_name)
     new_path = get_writable_file(buf_name, dir_name, nil, ext_input)
   end
 
