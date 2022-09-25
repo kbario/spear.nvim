@@ -11,8 +11,7 @@ M.is_uni = vim.fn.has "unix" == 1
 M.s_name = vim.loop.os_uname().sysname
 
 M.get_slash = function()
-  local is_win = vim.fn.has "win32" == 1 or vim.fn.has "win64" == 1
-  if is_win then
+  if M.is_win then
     return "\\"
   else
     return "/"
@@ -88,6 +87,7 @@ local function valid_option(input, valid_inputs)
   end
 end
 
+--[[ function returning an object with validated user spear settings ]]
 M.validate_options = function (config_input, global)
   local output = {}
   local saved_config = M.load_config("data")
@@ -95,7 +95,7 @@ M.validate_options = function (config_input, global)
   for k, v in pairs(settings) do
     if valid_option(config_input[k], v['values']) then
       output[k] = config_input[k]
-    elseif not M.is_nil(saved_config[k]) and not global == "global" then
+    elseif not M.is_nil(saved_config[k]) and global == false then
       output[k] = saved_config[k]
     else
       output[k] = v['default']
