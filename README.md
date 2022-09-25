@@ -13,63 +13,38 @@ Blazingly fast intrafolder neovim file navigation.
 
 ## the problem
 
-Folders are used to organise units of work, and good separation of concern sees this work broken up further into mutlilple files.
+Folders are used to organise units of work, and separation of concern breaks this work up into mutlilple files.
 A classic example of this is angular's component folder structure.
 
 ```bash
-Component
- ├─ component.html
- ├─ component.scss
- ├─ component.ts
- └─ component.spec.ts
+src
+└─ top-nav     
+    ├─ top-nav.component.html
+    ├─ top-nav.component.scss
+    ├─ top-nav.component.ts
+    └─ top-nav.component.spec.ts
 ```
 
-This is great for organised code but tedious when constantly switching between files to work on one thing.
+This is great for organised code but tedious during development, constantly switching between files just to work on one thing.
 
-You could try: 
- - navigating using a file tree (with the 20 keystrokes it takes per file transfer),
+To overcome this, you could try: 
+ - navigating using a file tree (:E down down down down down enter *dammit*... :E down down..)
  - setting up multiple splits (just to set them up for the next component 5 mins later),
- - set some global marks or use a fuzzy finder (to move to the file literally right next to the one you're in).
+ - use global marks or a fuzzy finder (to move to the file literally right next to the one you're in).
 
-or you could try:
+or you could use:
 
 ## the solution: Spear
 
-Spear lets you navigate to commonly used filetypes in the current folder, blazingly fast.
+Spear lets you navigate to files within the current folder that have specific extension, blazingly fast. 
 
-Inspired by [harpoon](https://github.com/ThePrimeagen/harpoon)'s sweetly smooth file movement with the press of a homerow key, 
-spear is designed to map your homerows to navigate to specific, commonly used filetypes in the current folder.
+Spear - a folder navigation plugin - was designed as a couterpart to [harpoon](https://github.com/ThePrimeagen/harpoon) - a global file navigation plugin - so that once you're in the folder you want, going between files is a breeze.
 
-## install
+Spear's navigation is relative, so the same keybindings navigate any folder in your project that have files with the designated filetypes.
 
-Easily setup with your favourite plugin manager, common ones below.
+Ultimately, Spear reduces the number of keystrokes and the cognitive overhead needed to move within a folder.
 
-### [Packer](https://github.com/wbthomason/packer.nvim)
-```lua 
--- with packer setup
-return require('packer').startup(function(use)
-  use("wbthomason/packer.nvim")
-  use("kbario/spear.nvim")
-end
-
--- to add to existing packer
-use("kbario/spear.nvim")
-```
-
-### [Plug](https://github.com/junegunn/vim-plug)
-```vimscript
-call plug#begin()
-Plug "kbario/spear.nvim"
-call plug#end()
-```
-
-## api
-
-The root and only function is `spear( extension: string | sting{} )`. It takes one argument - 
-the extention you want the file you move to to have - which can either be a string
-or a table of strings.
-
-### logic
+## logic
 
 Spear assumes that the name of the folder you're in is the name of the file and 
 everything else in the filename is the extension.
@@ -82,31 +57,90 @@ header    //unit of work name
 //  work name
  ```
 
-This is so you can do more than just file extensions, but also add descriptors.
+This is so you can do more than just filetypes, but also add descriptors.
 
-e.g. helper functions only for that component can be stored in navbar_helper.ts
-and then main component is navbar.ts
+An example is you have helper functions only for that component. They can be 
+stored in header_helper.ts and then main component is header.ts.
 
-spear config for this scenario
+The spear config for this scenario is:
 
 ```lua 
 -- jump to the main file
-spear(".ts")
+spear(".component.ts")
 
 -- jump to the helper
 spear("_helper.ts")
 ```
 
+## install
+
+Easily setup with your favourite plugin manager, common ones below.
+
+### [Packer](https://github.com/wbthomason/packer.nvim)
+```lua 
+use {
+  "kbario/spear.nvim",
+  requires = {"nvim-lua/plenary.nvim"} -- if you don't have it already
+}
+```
+
+### [Plug](https://github.com/junegunn/vim-plug)
+```vim
+Plug 'nvim-lua/plenary.nvim' " if you don't have it already
+Plug "kbario/spear.nvim"
+```
+
+## api
+
+Right now, spear is the only function
+
+```lua 
+spear( extension: string | table{strings}, overides: table{} )
+```
+
+Its main argument is the extention you want the file you move to to have, 
+and this can either be a string or a table of strings.
+
+Its second argument is optional and is the global options you wish to overide for this spear only.
+
 ### multiple inputs
 
-For the table, the first extension to match and be a valid file name, is the one 
-you spear to. This is usesful for:
+When giving a table of extensions, the default behaviour is the first extension 
+to match a file in the current folder will be the one you spear to. This is usesful for:
 
- - interchangeable filetypes
- e.g. {"component.css", "component.sass", "component.scss"}
- - filetypes that will never coexist
- e.g. {"component.ts", "pipe.ts"}
+#### interchangeable filetypes
 
+css, sass, and scss all serve the same purpose, just depends on the project
+```lua
+spear({ "component.css", "component.sass", "component.scss" })
+```
+
+#### filetypes that will never coexist
+e.g. {"component.ts", "pipe.ts"}
+
+
+### options
+
+The options and overides are
+
+```lua
+overides = {
+  
+  -- if multiple extentions are given, how do you want them to match?
+  -- valid args = first, swap
+  -- first (default) uses the first extension that exists in the current folder
+    -- does nothing if already in the first extension that matches
+  -- swap will use the first extension that matches in the current folder
+    -- will swap to the next extension that matches if already in the first extension
+  match_pref = "first",
+
+  -- do you want to save the file you spear from when you spear to another file?
+  -- takes a boolean
+  -- default = false
+  save_on_spear = false
+
+}
+```
 ## lsp setup
 
 Add the following to your nvim setup.
@@ -116,7 +150,15 @@ This adds the keymaps conditionally. This was derived from [tj's](https://github
 and [the primeagen's](https://github.com/ThePrimeagen/.dotfiles/blob/master/nvim/.config/nvim/after/plugin/lsp.lua) config's. Check them out to build on this.
 
 ``` lua
--- adds functions when the lsp client attaches
+-- first require spear
+require("spear").setup({
+  match_pref: "first",
+  save_on_spear: false
+})
+
+-- then bind a spear to your preferred keys
+-- feel free to make these global or
+-- adds these functions for specific lsp clients like below
 local client_attach = setmetatable({
   angularls = function()
   -- using standard nvim api
@@ -160,8 +202,6 @@ Spear is still a work in progress, use it with that in mind.
 
 Future features include:
 
-- **same-finger file swap**: assign to extensions to one finger, if you're in the first,
-it will switch to the second, and vice versa.
 - **foolproof client attach**: currently angularls and typescript files will conflict with each other.
 Improving how you set conditions, if angularls attaches, typescript keymaps do not.
 - **more customisation**: setup your spear to work for you, the way you want it to.
