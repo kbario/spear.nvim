@@ -11,43 +11,36 @@ Blazingly fast intrafolder neovim file navigation.
 
 </div>
 
+> todo: add a demo 
+
 ## the problem
+Folders and files are great for organising your code but navigating them 
+efficently is a pinchpoint of development.
 
-Folders are used to organise units of work, and separation of concern breaks this work up into mutlilple files.
-A classic example of this is angular's component folder structure.
+Usual methods of navigating folders include:
 
-```bash
-src
-└─ top-nav     
-    ├─ top-nav.component.html
-    ├─ top-nav.component.scss
-    ├─ top-nav.component.ts
-    └─ top-nav.component.spec.ts
-```
+ - file trees
+ - splits 
+ - fuzzy finders
+ - global marks
 
-This is great for organised code but tedious during development, constantly switching between files just to work on one thing.
+But these solutions are either way too powerful, tedious, or both just to move 
+to a neighbouring file.
 
-To overcome this, you could try: 
- - navigating using a file tree (:E down down down down down enter *dammit*... :E down down..)
- - setting up multiple splits (just to set them up for the next component 5 mins later),
- - use global marks or a fuzzy finder (to move to the file literally right next to the one you're in).
+## Spear
+Spear overcomes this pinchpoint of development and lets you navigate to files 
+in the current folder that have specific extensions.
 
-or you could use:
+Spear capitalises on projects with standard folder structures. Simply map 
+common file extensions in your project to keys of your choice and start spearing.
 
-## the solution: Spear
-
-Spear lets you navigate to files within the current folder that have specific extension, blazingly fast. 
-
-Spear - a folder navigation plugin - was designed as a couterpart to [harpoon](https://github.com/ThePrimeagen/harpoon) - a global file navigation plugin - so that once you're in the folder you want, going between files is a breeze.
-
-Spear's navigation is relative, so the same keybindings navigate any folder in your project that have files with the designated filetypes.
-
-Ultimately, Spear reduces the number of keystrokes and the cognitive overhead needed to move within a folder.
+**Ultimately, Spear reduces the number of keystrokes and the cognitive overhead needed to move within a folder.**
 
 ## logic
 
 Spear assumes that the name of the folder you're in is the name of the file and 
-everything else in the filename is the extension.
+everything else in the filename is the extension so you can do more than just filetypes, 
+but also add **descriptors**.
 
 ```bash
 header    //unit of work name
@@ -57,19 +50,39 @@ header    //unit of work name
 //  work name
  ```
 
-This is so you can do more than just filetypes, but also add descriptors.
+## use case
 
-An example is you have helper functions only for that component. They can be 
-stored in header_helper.ts and then main component is header.ts.
+Your project folder structure
 
-The spear config for this scenario is:
+```bash
+main
+ ├─ main.ts
+ └─ main_helper.ts
+```
+Spear config
 
 ```lua 
 -- jump to the main file
-spear(".component.ts")
+vim.keymap.set("n", "<leader>sj", function() spear(".ts") end)
 
 -- jump to the helper
-spear("_helper.ts")
+vim.keymap.set("n", "<leader>sk", function() spear("_helper.ts") end)
+```
+#### Angular
+```bash
+app
+ ├─ app.component.ts
+ ├─ app.component.html
+ ├─ app.component.css
+ └─ app.component.spec.ts
+```
+Spear config
+
+```lua 
+vim.keymap.set("n", "<leader>sj", function() spear(".component.ts") end)
+vim.keymap.set("n", "<leader>sk", function() spear(".component.html") end)
+vim.keymap.set("n", "<leader>sl", function() spear(".component.css") end)
+vim.keymap.set("n", "<leader>s;", function() spear(".component.spec.ts") end)
 ```
 
 ## install
@@ -110,14 +123,17 @@ to match a file in the current folder will be the one you spear to. This is uses
 
 #### interchangeable filetypes
 
-css, sass, and scss all serve the same purpose, just depends on the project
+css, sass, and scss all serve the same purpose, just depends on the project.
+
 ```lua
 spear({ "component.css", "component.sass", "component.scss" })
 ```
 
 #### filetypes that will never coexist
-e.g. {"component.ts", "pipe.ts"}
 
+```lua
+spear({"component.ts", "pipe.ts"})
+```
 
 ### options
 
@@ -205,5 +221,10 @@ Future features include:
 - **foolproof client attach**: currently angularls and typescript files will conflict with each other.
 Improving how you set conditions, if angularls attaches, typescript keymaps do not.
 - **more customisation**: setup your spear to work for you, the way you want it to.
+
+
+
+Spear - a folder navigation plugin - was designed as a couterpart to [harpoon](https://github.com/ThePrimeagen/harpoon) - 
+a global file navigation plugin - so that once you're in a folder, going between files is a breeze.
 
 
