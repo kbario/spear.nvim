@@ -1,4 +1,5 @@
 local utils = require("spear.utils")
+local pth = require("plenary.path")
 
 local M = {}
 
@@ -78,7 +79,7 @@ local function get_end(buf_nome)
     return false
   end
   local end_name = string.match(buf_nome:reverse(), "[^".. utils.get_slash() .."]+"):reverse()
-  local new_file_name = string.gsub(buf_nome, utils.get_slash()..end_name,"")
+  local new_file_name = string.gsub(buf_nome, "/"..end_name, "")
   return end_name, new_file_name
   -- return vim.fn.fnamemodify(buf_nome, ":t")
 end
@@ -126,11 +127,11 @@ local function make_new_file(dir_nome, ext)
   return string.format("%s%s", dir_nome, ext)
 end
 
-local function make_new_path(slesh, path, dir_nome, file_nome)
-  return string.format("%s%s%s%s%s", path, slesh, dir_nome, slesh, file_nome)
+local function make_new_path(path, dir_nome, file_nome)
+  return pth:new(string.format("%s/%s/%s", path, dir_nome, file_nome))
 end
 
-local function get_path(settings, slash, current_path, dirnome, ext, filenome)
+local function get_path(settings, current_path, dirnome, ext, filenome)
   if utils.is_string(ext) then
     local new_file = make_new_file(dirnome, ext)
     if new_file == filenome then
@@ -139,8 +140,9 @@ local function get_path(settings, slash, current_path, dirnome, ext, filenome)
       -- elseif settings["match"] == "swap" then
       end
     else
-      local new_path = make_new_path(slash, current_path, dirnome, new_file)
-      if is_writable_file(new_path) then
+      local new_path = make_new_path(current_path, dirnome, new_file)
+      print(new_path.filename, new_path._sep)
+      if is_writable_file(new_path.filename) then
         return new_path
       end
     end
@@ -150,17 +152,16 @@ local function get_path(settings, slash, current_path, dirnome, ext, filenome)
 end
 
 local function get_writable_file(settings, current_path, dirnome, ext_inpt, filenome)
-  local slash = utils.get_slash()
   if utils.is_table(ext_inpt) then
     for _, v in ipairs(ext_inpt) do
-      local new_path = get_path(settings, slash, current_path, dirnome, v, filenome)
+      local new_path = get_path(settings, current_path, dirnome, v, filenome)
       if not utils.is_nil(new_path) then
         return new_path
       end
     end
     return nil
   else
-    return get_path(settings, slash, current_path, dirnome, ext_inpt, filenome)
+    return get_path(settings, current_path, dirnome, ext_inpt, filenome)
   end
 end
 
@@ -169,6 +170,14 @@ local function get_buf_to_go_to_id(new_nome)
     return vim.fn.bufnr(new_nome)
   else
     return vim.fn.bufadd(new_nome)
+  end
+end
+
+local function update_slashes(path)
+  if utils.is_win() then
+    return string.gsub(path, "/", "\\")
+  else
+    return path
   end
 end
 
@@ -241,6 +250,7 @@ function M.spear(ext_input, overrides)
     new_path = get_writable_file(prefs, buf_name, dir_name, ext_input, nil)
   end
 
+--[[
   if new_path == "stay" then
     return already_in(file_name)
   end
@@ -254,8 +264,10 @@ function M.spear(ext_input, overrides)
     vim.api.nvim_command(":w")
   end
 
+  new_path = update_slashes(new_path)
+
   change_to(new_path)
-  speared_to(new_path)
+  speared_to(new_path) ]]
 end
 
 -- end main function
