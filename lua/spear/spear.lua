@@ -39,22 +39,6 @@ local function check_current_is_file_or_dir(buf_nome)
   end
 end
 
-local function ext_input_matches_extension(current_ext, ext_inpt)
-  if utils.is_table(ext_inpt) then
-    for _, v in ipairs(ext_inpt) do
-      if v == current_ext then
-        return true
-      end
-    end
-  elseif utils.is_string(ext_inpt) then
-    if ext_inpt == current_ext then
-      return true
-    end
-  else
-    return false
-  end
-end
-
 -- end validation functions
 
 -- start getters
@@ -79,18 +63,10 @@ local function get_end(buf_nome)
     return false
   end
   local end_name = string.match(buf_nome:reverse(), "[^".. utils.get_slash() .."]+"):reverse()
-  local new_file_name = string.gsub(buf_nome, "/"..end_name, "")
+  local new_file_name = string.gsub(buf_nome, utils.get_slash()..end_name, "")
   return end_name, new_file_name
   -- return vim.fn.fnamemodify(buf_nome, ":t")
 end
-
---[[ local function get_parent(buf_nome)
-  return vim.fn.fnamemodify(buf_nome, ":h:t")
-end ]]
-
---[[ local function get_extension(dir_nome, file_nome)
-  return string.gsub(file_nome, dir_nome, "")
-end ]]
 
 local function get_ext_as_string(dirnome, ext_inpt)
   local ext_string = ""
@@ -128,22 +104,24 @@ local function make_new_file(dir_nome, ext)
 end
 
 local function make_new_path(path, dir_nome, file_nome)
-  return pth:new(string.format("%s/%s/%s", path, dir_nome, file_nome))
+  local slash = utils.get_slash()
+  return pth:new(string.format("%s%s%s%s%s", path, slash, dir_nome, slash, file_nome))
 end
 
 local function get_path(settings, current_path, dirnome, ext, filenome)
   if utils.is_string(ext) then
     local new_file = make_new_file(dirnome, ext)
+    local first_or_swap = 'first'
     if new_file == filenome then
       if settings["match_pref"] == "first" then
         return "stay"
-      -- elseif settings["match"] == "swap" then
+      elseif settings["match"] == "swap" then
+        first_or_swap = "swap"
       end
     else
       local new_path = make_new_path(current_path, dirnome, new_file)
-      print(new_path.filename, new_path._sep)
       if is_writable_file(new_path.filename) then
-        return new_path
+        return new_path.filename, first_or_swap
       end
     end
   else
@@ -173,14 +151,6 @@ local function get_buf_to_go_to_id(new_nome)
   end
 end
 
-local function update_slashes(path)
-  if utils.is_win() then
-    return string.gsub(path, "/", "\\")
-  else
-    return path
-  end
-end
-
 -- end getters
 
 -- start file nav functions
@@ -193,12 +163,12 @@ end
 -- end file nav functions
 
 -- start print functions
-local function speared_to(pathnome)
-  print(string.format("speared to %s", utils.normalize_path(pathnome)))
-end
-
-local function swapped_to(pathnome)
-  print(string.format("spear: swapped to %s", utils.normalize_path(pathnome)))
+local function speared_to(pathnome, spear_or_swap)
+  if spear_or_swap == "swap" then
+    print(string.format("spear: swapped to %s", utils.normalize_path(pathnome)))
+  else
+    print(string.format("speared to %s", utils.normalize_path(pathnome)))
+  end
 end
 
 local function already_in(pathnome)
@@ -217,7 +187,6 @@ function M.spear(ext_input, overrides)
   end
 
   local prefs = utils.validate_options(overrides or {}, false)
-  print(prefs['match_pref'])
 
   -- initialise all variables
   local cur_buf_name = get_abs_buf_name()
@@ -225,6 +194,7 @@ function M.spear(ext_input, overrides)
   local file_name
   local dir_name
   local new_path
+  local first_or_swap
 
   -- check if were in a file or folder
   local is_file_or_dir = check_current_is_file_or_dir(cur_buf_name)
@@ -239,18 +209,16 @@ function M.spear(ext_input, overrides)
 
     dir_name, buf_name = get_end(buf_name)
     if not dir_name then return print("spear: invalid buf name") end
-    -- print(buf_name, dir_name, file_name, cur_ext)
 
-    new_path = get_writable_file(prefs, buf_name, dir_name, ext_input, file_name)
+    new_path, first_or_swap = get_writable_file(prefs, buf_name, dir_name, ext_input, file_name)
 
   elseif is_file_or_dir == "dir" then
     dir_name, buf_name = get_end(cur_buf_name)
     if not dir_name then return print("spear: invalid buf name") end
 
-    new_path = get_writable_file(prefs, buf_name, dir_name, ext_input, nil)
+    new_path, first_or_swap = get_writable_file(prefs, buf_name, dir_name, ext_input, nil)
   end
 
---[[
   if new_path == "stay" then
     return already_in(file_name)
   end
@@ -264,10 +232,8 @@ function M.spear(ext_input, overrides)
     vim.api.nvim_command(":w")
   end
 
-  new_path = update_slashes(new_path)
-
   change_to(new_path)
-  speared_to(new_path) ]]
+  speared_to(new_path, first_or_swap)
 end
 
 -- end main function
