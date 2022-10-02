@@ -1,5 +1,6 @@
 local utils = require("spear.utils")
 local pth = require("plenary.path")
+local log = require("spear.dev")
 
 local M = {}
 
@@ -59,6 +60,8 @@ local function get_abs_buf_name(id)
 end
 
 local function get_end(buf_nome)
+  -- for getting the parent... duh
+  -- require("plenary.path"):new(outfile):parent()
   if not utils.is_string(buf_nome)then
     return false
   end
@@ -181,14 +184,11 @@ end
 function M.spear(ext_input, overrides)
 
   -- check inputs are valid
-  local ext_input_is_valid = is_valid(ext_input)
-  if not ext_input_is_valid then
+  if not is_valid(ext_input) then
     return print("spear: not a valid extension; check your config")
   end
 
   local prefs = utils.validate_options(overrides or {}, false)
-
-  -- initialise all variables
   local cur_buf_name = get_abs_buf_name()
   local buf_name
   local file_name
@@ -228,9 +228,23 @@ function M.spear(ext_input, overrides)
     return print(string.format("spear: no files named %s found", ext_string))
   end
 
-  if prefs["save_on_spear"] then
+  --[[ if prefs["save_on_spear"] then
     vim.api.nvim_command(":w")
-  end
+  end ]]
+
+  log.info(
+    "\n",
+    "\nFINAL",
+    "\ncurrent buf name:", cur_buf_name,
+    "\npreferences", prefs,
+    "\ninputs", ext_input,
+    "\nbuf name:", buf_name,
+    "\nfile name:", file_name,
+    "\ndir name:", dir_name,
+    "\nnew path:", new_path,
+    "\nfirst or swap:", first_or_swap,
+    "\n"
+  )
 
   change_to(new_path)
   speared_to(new_path, first_or_swap)
