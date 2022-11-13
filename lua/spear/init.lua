@@ -1,6 +1,12 @@
 local utils = require("spear.utils")
 local M = {}
 
+---@class settings
+---@field match_pref MatchPref
+---@field save_on_spear SaveOnSpear
+
+---comment
+---@param config_input settings
 M.setup = function(config_input)
 
   if not config_input then

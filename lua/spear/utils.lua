@@ -1,5 +1,5 @@
 local pth = require("plenary.path")
-local settings = require("spear.settings").settings
+local settings = require("spear.settings")
 
 local M = {}
 
@@ -22,7 +22,27 @@ M.is_table = function(thing)
   return type(thing) == "table"
 end
 
+M.is_valid_table_of_strings = function(thing)
+  if M.is_string(thing) then return false end
+  if not type(thing) == "table" then return false end
+  local length = 0
+  for _, v in ipairs(thing) do
+    if not M.is_valid_string(v) then return false end
+    length = length + 1
+  end
+  if length == 0 then return false end
+  return "table"
+end
+
 M.is_string = function(thing)
+  if type(thing) == "string" then
+    return true
+  else
+    return false
+  end
+end
+
+M.is_valid_string = function(thing)
   if type(thing) == "string" then
     if thing ~= "" or thing ~= " " then
       return true
@@ -40,7 +60,7 @@ M.normalize_path = function(item)
 end
 
 M.is_nil = function(input)
- return input == nil
+  return input == nil
 end
 
 local function get_config_path(type)
@@ -88,14 +108,14 @@ local function valid_option(input, valid_inputs)
 end
 
 --[[ function returning an object with validated user spear settings ]]
-M.validate_options = function (config_input, global)
+M.validate_options = function(config_input, global)
   local output = {}
   local saved_config = M.load_config("data")
 
   for k, v in pairs(settings) do
     if valid_option(config_input[k], v['values']) then
       output[k] = config_input[k]
-    elseif not M.is_nil(saved_config[k]) and global == false then
+    elseif not M.is_nil(saved_config[k]) and not global then
       output[k] = saved_config[k]
     else
       output[k] = v['default']
@@ -105,5 +125,5 @@ M.validate_options = function (config_input, global)
   return output
 end
 
-return M
 
+return M
