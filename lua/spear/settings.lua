@@ -27,6 +27,16 @@ local M = {
     desc = "save the file you spear from when spearing to new file",
     values = get_values_as_table(Enums.SaveOnSpear),
     default = Enums.SaveOnSpear.FALSE,
+  },
+  print_err = {
+    desc = "whether or not to print any error messages spear generates",
+    values = get_values_as_table(Enums.PrintErr),
+    default = Enums.PrintErr.TRUE,
+  },
+  print_info = {
+    desc = "whether or not to print any info messages spear generates",
+    values = get_values_as_table(Enums.PrintInfo),
+    default = Enums.PrintInfo.TRUE,
   }
 }
 
