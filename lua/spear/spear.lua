@@ -5,6 +5,8 @@ local pth = require("plenary.path")
 local MatchPref = require("spear.enums").MatchPref
 local Actions = require("spear.enums").Actions
 local ValidationErrors = require("spear.enums").ValidationErrors
+local PrintErr = require("spear.enums").PrintErr
+local PrintInfo = require("spear.enums").PrintInfo
 
 
 local M = {}
@@ -88,8 +90,10 @@ local function get_ext_as_string(dirnome, ext_inpt, custom_sep)
 end
 
 ---@param err ValidationErrors
-local function print_err(err, var1, var2)
-  if err == ValidationErrors.NotAFileOrDir then
+local function print_err(err, prefs, var1, var2)
+  if prefs.print_err == PrintErr.FALSE then
+    return
+  elseif err == ValidationErrors.NotAFileOrDir then
     print("spear error: can't do things here")
   elseif err == ValidationErrors.InvalidInput then
     print("spear error: invalid input; check your config")
@@ -103,16 +107,20 @@ local function print_err(err, var1, var2)
   end
 end
 
-local function speared_to(pathnome, spear_or_swap)
-  if spear_or_swap == Actions.SWAP then
+local function speared_to(pathnome, spear_or_swap, prefs)
+  if prefs.print_info == PrintInfo.FALSE then
+    return
+  elseif spear_or_swap == Actions.SWAP then
     print(string.format("spear: swapped to %s", utils.normalize_path(pathnome)))
   else
     print(string.format("speared to %s", utils.normalize_path(pathnome)))
   end
 end
 
-local function print_info(info, var1)
-  if info == Actions.STAY then
+local function print_info(info, prefs, var1)
+  if prefs.print_info == PrintInfo.FALSE then
+    return
+  elseif info == Actions.STAY then
     print(string.format("spear: already in %s", utils.normalize_path(var1)))
   end
 end
@@ -227,17 +235,17 @@ function M.spear(exts, overrides)
 
   -- validate
   local curr_path, prefs, val_err = validate(exts, overrides)
-  if val_err ~= ValidationErrors.None then return print_err(val_err) end
+  if val_err ~= ValidationErrors.None then return print_err(val_err, prefs) end
 
   -- get
   local init_path, dir_name, path_err = get_end(curr_path)
-  if path_err ~= ValidationErrors.None then return print_err(path_err) end
+  if path_err ~= ValidationErrors.None then return print_err(path_err, prefs) end
 
   -- generate
   local action, new_path, err = find_spear_file(curr_path, init_path, dir_name, exts, prefs)
-  if err ~= ValidationErrors.None then return print_err(err) end
-  if utils.is_nil(new_path) then return print_err(ValidationErrors.NoMatchFound, dir_name, exts) end
-  if action == Actions.STAY then return print_info(action, curr_path) end
+  if err ~= ValidationErrors.None then return print_err(err, prefs) end
+  if utils.is_nil(new_path) then return print_err(ValidationErrors.NoMatchFound, prefs, dir_name, exts) end
+  if action == Actions.STAY then return print_info(action, prefs, curr_path) end
 
   -- spear
   spear_to(new_path, action, prefs)
@@ -259,7 +267,7 @@ local function bind(lhs, rhs, exts, prefs)
   end
   local ext_string = get_ext_as_string("", exts, custom_sep)
   local desc = string.format("spear: %s %s", init, ext_string)
-  return vim.keymap.set("n", lhs, rhs, { noremap = true, desc = desc})
+  return vim.keymap.set("n", lhs, rhs, { noremap = true, desc = desc })
 end
 
 --#endregion binding function

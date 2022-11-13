@@ -9,6 +9,16 @@ local M = {
     TRUE = true,
     FALSE = false
   },
+  ---@enum 
+  PrintInfo= {
+    TRUE = true,
+    FALSE = false
+  },
+  ---@enum 
+  PrintErr = {
+    TRUE = true,
+    FALSE = false
+  },
   ---@enum Actions
   Actions = {
     STAY = "stay",
