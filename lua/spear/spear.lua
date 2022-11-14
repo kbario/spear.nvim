@@ -224,7 +224,7 @@ end
 local function spear_to(new_path, action, prefs)
   if prefs.save_on_spear then vim.api.nvim_command(":w") end
   change_to(new_path)
-  speared_to(new_path, action)
+  speared_to(new_path, action, prefs)
 end
 
 --#endregion main functions
