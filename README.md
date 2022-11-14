@@ -7,34 +7,43 @@
 
 # Spear
 
-Blazingly fast intrafolder neovim file navigation.
+**Blazingly fast intrafolder neovim file navigation.**
+
+*Reduce the number of keystrokes and the cognitive overhead needed to move within
+folders with consistent file structures.*
 
 </div>
 
 > todo: add a demo 
 
 ## the problem
-Folders and files are great for organising your code but navigating them 
-efficently is a pinchpoint of development.
+Multi-file components and units of work (UOW) are great for organising your code
+and having separation of concern, but navigating between them can become tedious,
+especially if done frequently and over multiple UOW.
 
-Usual methods of navigating folders include:
+You could use file trees, splits, fuzzy finders, or global marks to move between 
+files, but these solutions can either be way too powerful, tedious, or both just 
+to move to a neighbouring file.
 
- - file trees
- - splits 
- - fuzzy finders
- - global marks
+## spear
+Spear lets you map the navigation to a specific file extension in the current 
+folder to a keybinding.
 
-But these solutions are either way too powerful, tedious, or both just to move 
-to a neighbouring file.
+```bash
+spear_bind("<leader>sj", ".ts")
+```
+This navigation is completely relative to the folder you are in, 
 
-## Spear
-Spear overcomes this pinchpoint of development and lets you navigate to files 
-in the current folder that have specific extensions.
+Spear relies on projects following a UOW file structure where the folder name is
+the same as it's files, only differing by their extension.
 
-Spear capitalises on projects with standard folder structures. Simply map 
-common file extensions in your project to keys of your choice and start spearing.
-
-**Ultimately, Spear reduces the number of keystrokes and the cognitive overhead needed to move within a folder.**
+```bash
+header
+ ├─ header.ts
+ ├─ header.css
+ ├─ header.html
+ └─ header.test.ts
+ ```
 
 ## logic
 
