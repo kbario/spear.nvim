@@ -154,24 +154,30 @@ local function get_valid_paths(init_path, dir_name, exts)
 end
 
 local function find_file_to_move_to(new_paths, curr_path, settings)
+  -- init local vars
+  local paths = {}
   local action = Actions.SPEAR
+  -- check if a generated path matches the current
+  -- if there is and prefs ars to match first then exit early
+  -- else if pref is next, change action to do this and ignore file
+  -- if generated file is not the same as current then add it to the
+  -- list to be sorted through
   for _, new_path in pairs(new_paths) do
-    -- if the file generated matches the file you are in
     if new_path == curr_path then
-      -- and the pref is to go to first match, then exit early
       if settings.match_pref == MatchPref.FIRST then
-        return Actions.STAY, curr_path
-        -- else update action to be swap
+        return Actions.STAY, new_path
       elseif settings.match_pref == MatchPref.NEXT then
         action = Actions.SWAP
       end
     else
-      -- if new_file doesn't match current then return it with the action
-      return action, new_path
+      table.insert(paths, new_path)
     end
   end
-  -- if file_to_move_to is nil then there are no matches so return stay and nil file
-  return Actions.STAY, nil
+  if paths[1] ~= nil then
+    return action, paths[1]
+  else
+    return Actions.STAY, nil
+  end
 end
 
 --#endregion find_spear_file functions

@@ -4,8 +4,9 @@ local M = {}
 ---@class settings
 ---@field match_pref MatchPref
 ---@field save_on_spear SaveOnSpear
+---@field print_err SaveOnSpear
+---@field print_info SaveOnSpear
 
----comment
 ---@param config_input settings
 M.setup = function(config_input)
 
