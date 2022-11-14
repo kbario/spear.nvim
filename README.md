@@ -9,8 +9,8 @@
 
 **Blazingly fast intrafolder neovim file navigation.**
 
-*Reduce the number of keystrokes and the cognitive overhead needed to move within
-folders with consistent file structures.*
+*Reduce the number of keystrokes and the cognitive overhead needed to move to a 
+neighbouring file.*
 
 </div>
 
@@ -22,7 +22,7 @@ and having separation of concern, but navigating between them can become tedious
 especially if done frequently and over multiple UOW.
 
 You could use file trees, splits, fuzzy finders, or global marks to move between 
-files, but these solutions can either be way too powerful, tedious, or both just 
+files, but these solutions can either be far too powerful, tedious, or both just 
 to move to a neighbouring file.
 
 ## spear
@@ -32,10 +32,11 @@ folder to a keybinding.
 ```bash
 spear_bind("<leader>sj", ".ts")
 ```
-This navigation is completely relative to the folder you are in, 
+Spearing is relative to the folder, so the same keybinding works throughout the
+entire project given there are files with that extension in the current folder.
 
-Spear relies on projects following a UOW file structure where the folder name is
-the same as it's files, only differing by their extension.
+Spear relies on a UOW folder structure where the folder name is the same as it's
+files, with extensions appending the folder name. e.g.
 
 ```bash
 header
@@ -44,55 +45,8 @@ header
  ├─ header.html
  └─ header.test.ts
  ```
-
-## logic
-
-Spear assumes that the name of the folder you're in is the name of the file and 
-everything else in the filename is the extension so you can do more than just filetypes, 
-but also add **descriptors**.
-
-```bash
-header    //unit of work name
- └─ header.component.spec.ts
-      |            |
-//  unit of     extension
-//  work name
- ```
-
-## use case
-
-Your project folder structure
-
-```bash
-main
- ├─ main.ts
- └─ main_helper.ts
-```
-Spear config
-
-```lua 
--- jump to the main file
-vim.keymap.set("n", "<leader>sj", function() spear(".ts") end)
-
--- jump to the helper
-vim.keymap.set("n", "<leader>sk", function() spear("_helper.ts") end)
-```
-#### Angular
-```bash
-app
- ├─ app.component.ts
- ├─ app.component.html
- ├─ app.component.css
- └─ app.component.spec.ts
-```
-Spear config
-
-```lua 
-vim.keymap.set("n", "<leader>sj", function() spear(".component.ts") end)
-vim.keymap.set("n", "<leader>sk", function() spear(".component.html") end)
-vim.keymap.set("n", "<leader>sl", function() spear(".component.css") end)
-vim.keymap.set("n", "<leader>s;", function() spear(".component.spec.ts") end)
-```
+ This is great not only for file extentions like `.tsx`, `.html`, and `.css` but also
+ descriptive extensions like `_helper.ts` or `_utils.ts`.
 
 ## install
 
@@ -111,6 +65,84 @@ use {
 Plug 'nvim-lua/plenary.nvim' " if you don't have it already
 Plug "kbario/spear.nvim"
 ```
+
+## setup
+
+To customise the global default settings of spear, put this somewhere in your config:
+
+```lua
+require("spear").setup({
+  -- how you want spear to match extensions if multiple are provided
+  -- "first" (default): spears to the first extension matched
+  -- "next": spears to the next extension matched if the first matches current
+  match_pref = "first",
+  -- will save the file you are spearing from when you spear from it
+  -- false (default)
+  -- true
+  save_on_spear = false,
+  -- whether or not to print error messages
+  -- true (default)
+  -- false
+  print_err = true,
+  -- whether or not to print info messages such as 'speared to app.tsx'
+  -- true (default)
+  -- false
+  print_info = true,
+})
+
+  -- if you are already in the matched file, you stay there
+      -- useful for extensions that don't often exist in the same file,
+      -- or for mutually exclusive filetypes (css, scss and sass)
+```
+
+## api
+
+`spear( ext: string | table<string>, overrides: table<config> or {})`
+
+Actually spears you to the file in the current folder with the provided extension
+if one is found using the config (if any) provided
+
+#### ext 
+
+`spear( extensions: string|table<string>, overrides?: table<config>)` 
+
+extentions: the extension(s) as a string (or table of)
+
+`spear_bind()`
+spear you to a file with the provided extension if one is found, the other 
+allows you to map the spear to a keybinding
+
+```lua
+
+```
+
+## use case
+
+### angular 
+
+```lua
+app
+ ├─ app.component.ts        -- spear_bind("<leader>sj", ".component.ts")
+ ├─ app.component.html      -- spear_bind("<leader>sj", ".component.html")
+ ├─ app.component.css       -- spear_bind("<leader>sj", ".component.css")
+ └─ app.component.spec.ts   -- spear_bind("<leader>sj", ".component.spec.ts")
+```
+
+ <!-- spear_bind("<leader>sj", "app.component.ts") -->
+ <!-- spear_bind("<leader>sk", "app.component.html") -->
+ <!-- spear_bind("<leader>sl", "app.component.css") -->
+ <!-- spear_bind("<leader>s;", "app.component.spec.ts") -->
+
+### solidjs 
+
+```lua
+navbar
+ ├─ navbar.tsx        -- spear_bind("<leader>sj", ".tsx")
+ ├─ navbar.css        -- spear_bind("<leader>sj", ".css")
+ ├─ navbar.test.ts    -- spear_bind("<leader>sj", ".test.ts")
+ └─ navbar_helper.ts  -- spear_bind("<leader>sj", "_helper.ts")
+```
+
 
 ## api
 
